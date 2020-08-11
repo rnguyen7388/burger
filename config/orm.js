@@ -1,42 +1,49 @@
-const connection = require("./connection");
+const connection = require("../config/connection.js");
 
-function questionMarks(num) {
+function objToSql(ob) {
   let arr = [];
-  for (let i = 0; i < num; i++) {
-    arr.push("?");
+  for (let key in ob) {
+    let value = ob[key];
+    if (Object.hasOwnProperty.call(ob, key)) {
+      if (typeof value === "string" && value.indexOf(" ") >= 0) {
+        value = "'" + value + "'";
+      }
+      arr.push(key + "=" + value);
+    }
   }
   return arr.toString();
 }
 
-const orm = {
+let orm = {
+
   selectAll: function (table, cb) {
-    connection.query("SELECT * FROM ??" + [table], (err, data) => {
+    let queryString = "SELECT * FROM " + table + ";"
+    connection.query(queryString, function (err, response) {
       if (err) throw err;
-      cb(data);
-    });
+
+      cb(response);
+    })
+
   },
-  insertOne: function (table, columns, values, cb) {
-    connection.query(
-      `INSERT INTO ${table} (${columns.toString()}) VALUES (${questionMarks(
-        values
-      )})`,
-      values,
-      (err, data) => {
-        if (err) throw err;
-        cb(data);
-      }
-    );
+
+  insertOne: function (table, col, val, cb) {
+    let queryString = "INSERT INTO " + table + '(' + col + ') VALUES ("' + val + '");'
+    connection.query(queryString, function (err, response) {
+      if (err) throw err;
+
+      cb(response);
+    })
   },
-  updateOne: function (table, id, cb) {
-    connection.query(
-      `UPDATE ${table} SET devoured = true WHERE id = ?`,
-      [id],
-      (err, data) => {
-        if (err) throw err;
-        cb(data);
-      }
-    );
-  },
-};
+
+  updateOne: function (table, colVal, condition, cb) {
+    let queryString = "UPDATE " + table + " SET " + objToSql(colVal) + " WHERE " + condition + ";"
+    connection.query(queryString, function (err, response) {
+      console.log(queryString);
+      if (err) throw err;
+
+      cb(response);
+    })
+  }
+}
 
 module.exports = orm;
